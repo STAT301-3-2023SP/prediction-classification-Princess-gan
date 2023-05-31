@@ -19,10 +19,10 @@ registerDoMC(cores = 8)
 
 # define model ---------------------------------------
 rf_model <- rand_forest(
+  mode = "classification",
   mtry = tune(),
   min_n = tune()
 ) %>% 
-  set_mode("regression") %>% 
   set_engine("ranger", importance = "impurity") #let's use variable importance
 
 # check tuning parameters
@@ -51,7 +51,7 @@ rf_tune <- tune_grid(
   control = control_grid(save_pred = TRUE, #create an extra column for each prediction
                          save_workflow = TRUE, # let's use extract_workflow
                          parallel_over = "everything"),
-  metrics = metric_set(rmse)
+  metrics = metric_set(roc_auc)
 )
 
 toc(log = TRUE)
@@ -64,6 +64,6 @@ rf_tictoc <- tibble(model = time_log[[1]]$msg,
 
 # stopCluster(cl)
 
-save(rf_tune, rf_tictoc, 
+save(rf_workflow, rf_tune, rf_tictoc, 
      file = "results/tuned_rf.rda")
 

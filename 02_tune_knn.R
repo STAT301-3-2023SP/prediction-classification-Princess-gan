@@ -18,11 +18,11 @@ registerDoMC(cores = 8) # put in each r script
 # define model engine and workflow
 
 knn_model <-
-  nearest_neighbor(neighbors = tune() 
+  nearest_neighbor(mode = "classification",
+    neighbors = tune() 
                    #weight_func = tune(), dist_power = tune()
                    ) %>%
-  set_engine('kknn') %>%
-  set_mode('regression')
+  set_engine('kknn')
 
 
 knn_params <- extract_parameter_set_dials(knn_model)
@@ -35,6 +35,9 @@ knn_workflow <- workflow() %>%
   
 #######################################################################################
 # tune grid
+# clear and start timer 
+tic.clearlog()
+tic("K-nearest neighbors")
 
 knn_tune <- tune_grid(
   knn_workflow, 
@@ -45,8 +48,16 @@ knn_tune <- tune_grid(
                          save_workflow = TRUE,
                          # let's tiy yse extract_workflow later on
                          parallel_over = "everything"),
-  metrics = metric_set(rmse)
+  metrics = metric_set(roc_auc)
 )
 
+toc(log = TRUE)
 
-save(knn_tune, file = "results/tuned_knn.rda")
+time_log <- tic.log(format = FALSE)
+
+knn_tictoc <- tibble(model = time_log[[1]]$msg,
+                      runtime = time_log[[1]]$toc - time_log[[1]]$tic)
+#runtime is (toc - tic) value
+
+stopCluster(cl)
+save(knn_workflow, knn_tictoc, knn_tune, file = "results/tuned_knn.rda")

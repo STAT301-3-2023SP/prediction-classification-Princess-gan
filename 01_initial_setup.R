@@ -7,10 +7,11 @@ load(file = "results/lasso_var.rda")
 
 train <- read_csv("data/train.csv") %>%
   janitor::clean_names() %>% 
+  mutate(y = factor(y)) %>% 
   select(-id) %>% 
   mutate_at(cat_var, as.factor)
 
-train_log <- train %>% 
+train_log <- train %>%
   mutate(y = log(y))
 
 train %>% view()
@@ -29,11 +30,12 @@ my_fold <- train %>%
   vfold_cv(v = 5, repeats = 3, strata = y)
 
 # recipe
-load("data/lasso_var.rda")
  #remove "ylog"
 # selected_vars <-  selected_vars[selected_vars != "ylog"]
 # 
 # selected_vars
+length(lasso_vars)
+
 lasso_vars <- lasso_vars %>% 
   stringr::str_split("_", simplify = TRUE)
 lasso_vars <- lasso_vars[,1] %>% unique()
@@ -47,8 +49,10 @@ lasso_vars <- lasso_vars[,1] %>% unique()
 removed_vars <- setdiff(colnames(train), c(lasso_vars, "y"))
 removed_vars
 
-union_removed_vars <- setdiff(colnames(reg_train), c(union_vars, "y"))
+union_removed_vars <- setdiff(colnames(train), c(union_vars, "y"))
 
+# recipes --------------------------------------
+# recipe 1
 my_recipe <- recipe(y ~ ., data = train) %>%
   step_rm(!!removed_vars) %>% 
   # step_novel(all_nominal_predictors()) %>% 
@@ -64,7 +68,19 @@ my_recipe %>%
   prep(train) %>% 
   bake(new_data = NULL) %>% 
   view()
-  
+# recipe 2
+log_recipe <- recipe(y ~ ., data = train_log) %>% 
+  step_rm(!!intersect_removed_vars) %>% 
+  step_dummy(all_nominal_predictors()) %>% # convert categorical vars into numerical
+  step_nzv(all_predictors()) %>% # do this before normalize
+  step_normalize(all_numeric_predictors()) %>% 
+  step_corr(all_predictors()) %>% 
+  step_impute_knn(all_predictors())
+
+reg_log %>%
+  prep(reg_train_log %>% slice(1:10)) %>%
+  bake(new_data = NULL) %>% view() 
+
 # some sort of variable reduction
 ## done in var_selection
 # load("data/lasso_var.rda")

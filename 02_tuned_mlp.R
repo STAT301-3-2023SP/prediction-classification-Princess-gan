@@ -20,10 +20,10 @@ registerDoMC(cores = 8)
 
 # define model ---------------------------------------
 mlp_model <- mlp(
+  mode = "classification",
   hidden_units = tune(),
   penalty = tune(),
 ) %>% 
-  set_mode("regression") %>% 
   set_engine("nnet", importance = "impurity") #let's use variable importance
 
 # check tuning parameters
@@ -51,7 +51,7 @@ mlp_tune <- tune_grid(
   control = control_grid(save_pred = TRUE, #create an extra column for each prediction
                          save_workflow = TRUE, # let's use extract_workflow
                          parallel_over = "everything"),
-  metrics = metric_set(rmse)
+  metrics = metric_set(roc_auc)
 )
 
 toc(log = TRUE)
@@ -64,5 +64,5 @@ mlp_tictoc <- tibble(model = time_log[[1]]$msg,
 
 # stopCluster(cl)
 
-save(mlp_tune, mlp_tictoc, 
+save(mlp_workflow, mlp_tune, mlp_tictoc, 
      file = "results/tuned_mlp.rda")

@@ -12,13 +12,15 @@ load("results/tuning_setup.rda")
 ######################################
 # set up parallel processing
 library(doMC)
-registerDoMC(cores = 8)
+registerDoMC(cores = 12)
 
 #######################################
 
 # define model engine and workflow
-en_model <- linear_reg(penalty = tune(),
-                         mixture = tune()) %>% 
+en_model <- logistic_reg(mode = "classification",
+                       penalty = tune(),
+                       mixture = tune()) %>% 
+  set_mode("classification") %>% 
   set_engine("glmnet") 
 
 # set up tuning grid --------------------------------------------------  
@@ -35,8 +37,8 @@ en_workflow <- workflow() %>%
 
 # Tune grid
 # # clear and start timer 
-# tic.clearlog()
-# tic("Elastic Net")
+ tic.clearlog()
+ tic("Elastic Net")
 
 en_tune <- tune_grid(
   en_workflow,
@@ -45,15 +47,15 @@ en_tune <- tune_grid(
   control = control_grid(save_pred = TRUE, #create an extra column for each prediction
                          save_workflow = TRUE, # let's use extract_workflow
                          parallel_over = "everything"),
-  metrics = metric_set(rmse))
+  metrics = metric_set(roc_auc))
 
-# toc(log = TRUE)
-# time_log <- tic.log(format = FALSE)
-# en_tictoc <- tibble(model = time_log[[1]]$msg,
-#                     runtime = time_log[[1]]$toc - time_log[[1]]$tic)
+toc(log = TRUE)
+time_log <- tic.log(format = FALSE)
+en_tictoc <- tibble(model = time_log[[1]]$msg,
+                    runtime = time_log[[1]]$toc - time_log[[1]]$tic)
 # #runtime is (toc - tic) value
 
-# stopCluster(cl)
+stopCluster(cl)
 
 save(en_workflow, en_tune,
      file = "results/tuned_en.rda")

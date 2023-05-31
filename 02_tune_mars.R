@@ -21,10 +21,10 @@ registerDoMC(cores = 8)
 #-------------------------------
 # define model engine and workflow
 mars_model <- mars(
+  mode = "classification",
   num_terms = tune(),
   prod_degree = tune()
 ) %>% 
-  set_mode("regression") %>% 
   set_engine("earth")
 
 num_terms
@@ -50,7 +50,7 @@ mars_tune <- tune_grid(
   control = control_grid(save_pred = TRUE, #create an extra column for each prediction
                          save_workflow = TRUE, # let's use extract_workflow
                          parallel_over = "everything"),
-  metrics = metric_set(rmse))
+  metrics = metric_set(roc_auc))
 
  toc(log = TRUE)
 
@@ -64,3 +64,6 @@ stopCluster(cl)
 
 save(mars_tune, mars_tictoc, 
      file = "results/tuned_mars.rda")
+
+save(mars_workflow, file = "results/workflow_mars.rda")
+

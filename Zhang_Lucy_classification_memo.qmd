@@ -1,0 +1,85 @@
+---
+title: "Classification Prediction Problem"
+subtitle: "Data Science 3 with R (STAT 301-3)"
+author: "Lucy Zhang"
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: show
+    link-external-newwindow: true
+    
+execute:
+  warning: false
+
+from: markdown+emoji  
+---
+
+## Github Repo Link
+
+::: {.callout-note icon="false"}
+## Github Link for Replication
+
+[https://github.com/STAT301-3-2023SP/prediction-classification-Princess-gan.git](https://github.com/STAT301-3-2023SP/prediction-classification-Princess-gan.git)
+
+:::
+
+## Introduction
+
+This Kaggle prediction problem aims at predicting results for a classification problem using a masked financial dataset. The metric used for evaluation is ROC_AUC (Receiver Operating Characteristic Area Under the Curve). 
+
+In this memo, I will describe the preprocessing process including feature engineering, the model tuning process, and finally predicting the outcome variable and evaluate it.
+
+## Feature Engineering Processes
+
+**Variable selection:** As there are 765 variables in the original dataset, I decided to use lasso model to select more relevant variables as a subset to include in the model. I used cross-validation resampling method to create 5 folds and 1 repeat for training observations, and then used a basic recipe to tune the penalty of lasso regression model as the hyperparameter for finding the correlation of each variables. In the end, I filtered out all variables with low correlation and pertained **49** variables for further model tuning and prediction process. 
+
+**Resampling Method:** I used cross-validation resampling method to create 5 folds and 3 repeats for the cleaned training dataset (factoring all the character variables).
+
+**Recipes:** I created 2 recipes, which are described below: 
+
+- *Recipe 1:* I feed in the cleaned training dataset in the first recipe, and included the 102 best predictors. I  removed any predictors with near-zero variance, converts all nominal predictors (categorical variables) into dummy variables, removed predictors that are highly correlated with each other, imputed missing variables using KNN, and normalized all predictors. 
+
+- *Recipe 2:* The second recipe is very similar to the first one, besides I feed in with the dataset with outcome variable being log-transformed. I finally chose the first one for easier interpretation of the models' predictions and higher comparability.
+
+
+## Model Tuning
+
+After preprocessing steps and creating recipes, I fit and tuned **4** models, including random forest, K-Nearest Neighbors (KNN), Multivariate Adaptive Regression Splines (MARS), Multilayer Perceptron/Neural network (MLP).
+
+I tuned the models using resampling method to find the best hyper parameters. The table below lists each model, and the corresponding roc_auc, and computation time after feeding in the training data.
+
+```{r}
+#| echo: false
+library(tidyverse)
+load("table/result_table.rda")
+load("table/model_times.rda")
+
+result_table_filtered %>% 
+  knitr::kable()
+
+```
+
+The following graph shows the `roc_auc` value for models' performance on training data:
+
+![](images/model_set.png)
+
+## Winner models: 
+
+The 2 selected models with the highest roc_auc values for the test data prediction vary a little different from the metric performance for training data. They are the MARS and Random Forest model. 
+
+## Runner-Up Model: Random Forest
+
+The second best model, random forest model, is an ensemble learning method that combines the predictions of multiple decision trees to make more accurate predictions. After the tuning process, the selected best performing hyperparameters are 15 mtry (the number of variables randomly sampled as candidates at each split) and 30 min_n (the minimum number of samples required to split a node).
+
+The final ROC_AUC value after test data prediction is `0.5847`.
+
+## Best Model: MARS
+
+The best model is the MARS (Multivariate Adaptive Regression Splines) model. The selected hyper paramters within the model after tuning process are 12 num_terms (the maximum number of terms allowed in the model) and 1 prod_degree (the maximum product degree allowed in the model).
+
+It achieved an ROC_AUC of `0.5856`. 
+
+
+
