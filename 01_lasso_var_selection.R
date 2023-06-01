@@ -12,7 +12,8 @@ library(doMC)
 
 load("results/var_info.rda")
 
-train <- read_csv("data/train.csv") 
+train <- read_csv("data/train.csv") %>% 
+  mutate(y = log(y))
 #transform? log? logit?
 
 # eda is on a random sample of train to prevent overfitting
@@ -32,12 +33,11 @@ init_recipe <- recipe(y ~ ., data = train) %>%
 
 
 ### tune a lasso model
-lasso_mod <- logistic_reg(
+lasso_mod <- linear_reg(
   mode = "regression",
   penalty = tune(),
   mixture = 1) %>% 
   set_engine("glmnet")
-
 
 lasso_params <- extract_parameter_set_dials(lasso_mod) %>% 
   update(penalty = penalty(range = c(0.01, 0.1), trans = NULL))
@@ -49,7 +49,7 @@ lasso_workflow <- workflow() %>%
   add_model(lasso_mod)
  
 # set up parallel processing 
-registerDoMC(cores = 12)
+registerDoMC(cores = 8)
 
 lass_tune <- tune_grid(
   lasso_workflow,
@@ -76,11 +76,12 @@ lasso_fit <- lasso_final_wflow %>% fit(train)
 lasso_var <- lasso_fit %>% 
   tidy()
 
-lasso_vars <- lasso_var %>% 
+get_var <- lasso_var %>% 
   filter(estimate !=0, term != "(Intercept)") %>% 
   pull(term)
 
-lasso_vars
+lasso_vars <- get_var
+
 # view(my_fold)
 # lasso_var <- lasso_var %>% 
 #   stringr::str_split("_", simpllify = TRUE)
@@ -88,8 +89,8 @@ lasso_vars
 # 
 # lasso_var 
 
-unselected_vars <- setdiff(colnames(train), c((lasso_vars), "y"))
+unselected_vars <- setdiff(colnames(train), c((get_var), "y"))
 
 unselected_vars
-save(lasso_vars, unselected_vars, file = "results/lasso_var.rda")
+save(lasso_vars, unselected_vars, file = "data/lasso_var.rda")
 save(init_recipe, file = "init_recipe.rda")
