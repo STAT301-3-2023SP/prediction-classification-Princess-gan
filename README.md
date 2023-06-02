@@ -10,3 +10,5 @@ To recreate, you can:
 - 04 R scipts stores all the final predictions for the test dataset, which are all written up as `.csv` files in `attempts` folder. These are results posted to Kaggle! 
 
 The `attempts` folders hold all the predictions, `results` folder hold all the tuned results, `table` folder holds the material for memo. 
+
+** Some of the R scripts are not tuned (eg. svm_poly)
